@@ -24,28 +24,35 @@
     <title>Time Assignment</title>
 </head>
 <body>
-
     <article>
-
         <h1> Are you stressed about your exam? </h1>
         <h2> Well, let's see how stressed you should be </h2>
-
         <h3> Please enter your exam date below </h3>
 
         <input type="date" id="date_input" max="2026-12-31" />
 
         <h1 id="countdown"></h1>
-    
         <h1 id="stress-info"></h1>
         <h2 id="additional-stress-info"></h2>
-
+        <audio id="warning-sound" src="sounds/warning.mp3" preload="auto"></audio>
     </article>
 
     <script>
 
         // the exact exam date 
         const examDate = document.getElementById("date_input");
+        const stressInfo = document.getElementById("stress-info");
+        const additionalStressInfo = document.getElementById("additional-stress-info");
         let blinkInterval; // blinkInterval to stop and start blink
+
+        // list of subjects with daysToStudy
+        const subjects = [
+                { subject: "NodeJs", daysToStudy: 21 }, 
+                { subject: "AiAgents", daysToStudy: 3 }, 
+                { subject: "Python", daysToStudy: 3 },
+                { subject: "IT-Security", daysToStudy: 3 },
+                { subject: "Dev-ops", daysToStudy: 3 },
+        ];  
 
         // function to calculate time between dates 
         function getTimeBetweenDates(examDate) {
@@ -54,7 +61,7 @@
             console.log(differenceInDates); 
             
             if (differenceInDates < 0) {
-                return "You are too late!"
+                return "You are too late!";
             }
 
             // finding the exact time left by using moudle-operator 
@@ -71,7 +78,7 @@
         function updateTimeBetweenDays() {
             const countDown = getTimeBetweenDates(examDate.value);
             document.getElementById("countdown").innerText = countDown; 
-        }
+        };
 
         // changes styling based on how long to the exam 
         function changeStyleBasedOnDate(examDate) {
@@ -84,49 +91,19 @@
             if (daysLeft >= 14) {
                 stopBlinking();
                 background.style.backgroundColor = "green"; 
+                stopWarningSound();
 
             } else if (daysLeft >= 7) {
                 stopBlinking();
                 background.style.backgroundColor = "orange"; 
+                stopWarningSound();
 
             } else {
                 startBlinking(); 
+                warningSound();
                 background.style.backgroundColor = "red"; 
             }
-        }
-
-        // function to start the blink 
-        function startBlinking() {
-            const body = document.querySelector("body");
-
-            if (blinkInterval) {
-                clearInterval(blinkInterval);
-            }
-
-            let blink = false;
-            blinkInterval = setInterval(() => {
-                blink = !blink; // if false true - if true false 
-                body.style.backgroundColor = blink ? "red" : "white"; 
-            }, 200); 
         };
-
-        // function to stop the blink 
-        function stopBlinking() {
-            if (blinkInterval) {
-                clearInterval(blinkInterval);
-                blinkInterval = null;
-                document.body.style.backgroundColor = ""; 
-            }
-        };   
-
-        // list of subjects with daysToStudy
-        const subjects = [
-                { subject: "NodeJs", daysToStudy: 21 }, 
-                { subject: "AiAgents", daysToStudy: 3 }, 
-                { subject: "Python", daysToStudy: 3 },
-                { subject: "IT-Security", daysToStudy: 3 },
-                { subject: "Dev-ops", daysToStudy: 3 },
-            ];         
 
         // function that adds subject to a dropdown 
         function chooseSubject(subjects){
@@ -156,43 +133,80 @@
                     const stress = calculateStressFactor(examDate.value, selectedSubject);
                     console.log("Stress factor:", stress);
                 }
-            });
-        }
+            })
+        };
 
         // calculates the stress based on days to exam and how many days you should study for a subject 
         function calculateStressFactor(examDate, subjectName){
             const now = new Date();
             const differenceInDates = new Date(examDate) - now;
-
             const daysLeft = Math.floor((differenceInDates / (1000 * 60 * 60 * 24))); 
 
             const subject = subjects.find(sub => sub.subject === subjectName);
             
             if (!subject) {
-                return "Subject not found"
+                return "Subject not found";
             }
 
             let stressFactor = subject.daysToStudy / daysLeft; 
-
-            const stressInfo = document.getElementById("stress-info");
-            const additionalStressInfo = document.getElementById("additional-stress-info");
 
             // changes styling based on stressFactor 
             if (stressFactor > 1) {
                 stressInfo.innerText = "You are REALLY screwed!";
                 additionalStressInfo.innerText = "Stressfactor is CRTICAL";
                 startBlinking();
+                warningSound();
             } else if (stressFactor === 1) {
                 stressInfo.innerText = "You are on the limit";
                 additionalStressInfo.innerText = "Stressfactor is mid";
                 stopBlinking();
+                stopWarningSound();
             } else {
                 stressInfo.innerText = "Yeah, no stress...";
                 additionalStressInfo.innerText = "Stressfactor is low";
                 stopBlinking(); 
+                stopWarningSound();
             }
         
             return stressFactor; 
+        };
+
+        // function to start the blink 
+        function startBlinking() {
+            const body = document.querySelector("body");
+
+            if (blinkInterval) {
+                clearInterval(blinkInterval);
+            }
+
+            let blink = false;
+            blinkInterval = setInterval(() => {
+                blink = !blink; // if false true - if true false 
+                body.style.backgroundColor = blink ? "red" : "white"; 
+            }, 200); 
+        };
+
+        // function to stop the blink 
+        function stopBlinking() {
+            if (blinkInterval) {
+                clearInterval(blinkInterval);
+                blinkInterval = null;
+                document.body.style.backgroundColor = ""; 
+            }
+        };          
+
+        // function to start warning sound
+        function warningSound(){
+            const sound = document.getElementById("warning-sound");
+            sound.currentTime = 0;
+            sound.play().catch(err => console.log("Cannot play sound yet:", err));
+        };
+
+        // function to stop warning sound
+        function stopWarningSound() {
+            const sound = document.getElementById("warning-sound");
+            sound.pause();       
+            sound.currentTime = 0; 
         };
         
         let dropdownCreated = false; 
@@ -202,6 +216,10 @@
             updateTimeBetweenDays();
             setInterval(updateTimeBetweenDays, 1000);
             changeStyleBasedOnDate(examDate.value);
+            
+            // resets the stress info when choosing another date 
+            stressInfo.innerText = "";
+            additionalStressInfo.innerText = "";  
 
             // will show the dropdown if its not already created 
             if (!dropdownCreated) {
@@ -209,7 +227,6 @@
                 dropdownCreated = true;
             }
         });
-
     </script>
 </body>
 </html>
